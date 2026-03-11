@@ -638,6 +638,17 @@ def populate_form(fields: Dict[str, str]):
     st.session_state.simple_explanation = ""
 
 
+def apply_start_action(action: str, starter_key: str | None = None):
+    if action == "blank":
+        reset_form()
+        return
+    if action == "example":
+        populate_form(DEMO_EXAMPLE)
+        return
+    if action == "starter" and starter_key:
+        load_starter(starter_key)
+
+
 def has_saved_answers() -> bool:
     return any(clean_field(st.session_state.get(key, "")) for key in FORM_STATE_KEYS)
 
@@ -922,14 +933,27 @@ def main():
     if has_saved_answers():
         st.caption("Loading a new starting point will replace your current answers.")
 
-    if st.button(start_button_label, use_container_width=True):
-        if start_choice == "Start with a blank form":
-            reset_form()
-        elif start_choice == "Use a filled example":
-            populate_form(DEMO_EXAMPLE)
-        else:
-            load_starter(starter_choice)
-        st.rerun()
+    if start_choice == "Start with a blank form":
+        st.button(
+            start_button_label,
+            use_container_width=True,
+            on_click=apply_start_action,
+            args=("blank",),
+        )
+    elif start_choice == "Use a filled example":
+        st.button(
+            start_button_label,
+            use_container_width=True,
+            on_click=apply_start_action,
+            args=("example",),
+        )
+    else:
+        st.button(
+            start_button_label,
+            use_container_width=True,
+            on_click=apply_start_action,
+            args=("starter", starter_choice),
+        )
 
     st.markdown("---")
     st.markdown("### Step 2 of 3: Tell us what you need")
@@ -962,9 +986,11 @@ def main():
 
     with st.expander("Need to start over?", expanded=False):
         st.write("This clears every answer and removes the generated prompt.")
-        if st.button("Clear all answers", use_container_width=True):
-            reset_form()
-            st.rerun()
+        st.button(
+            "Clear all answers",
+            use_container_width=True,
+            on_click=reset_form,
+        )
 
     if generate_clicked:
         data = collect_form_data()
