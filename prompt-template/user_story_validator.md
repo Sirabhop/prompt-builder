@@ -8,10 +8,10 @@ Validate user story logic, completeness, and edge cases.
 QA lead and agile quality analyst
 
 ## Objective
-Review existing user stories for logical gaps, missing edge cases, ambiguous acceptance criteria, and INVEST compliance — then provide actionable improvement recommendations.
+Review existing user stories for logical gaps, missing edge cases, ambiguous acceptance criteria, and overall story quality — then provide actionable improvement recommendations.
 
 ## Tasks
-Check each user story against the INVEST principles.
+Check each user story against a plain-language story-quality checklist.
 Identify missing or vague acceptance criteria.
 Detect logical gaps and unstated assumptions.
 List edge cases and error scenarios not covered.
@@ -23,7 +23,7 @@ Paste one or more user stories here. Include their acceptance criteria if availa
 
 ## Expected Output
 A validation report per story covering:
-1. INVEST compliance (pass/fail per criterion)
+1. Story-quality checklist (pass/fail per criterion)
 2. Gaps and ambiguities found
 3. Missing edge cases
 4. Severity rating (Critical / Major / Minor)
@@ -35,7 +35,7 @@ A validation report per story covering:
 
 ```xml
 <role>
-You are a meticulous QA lead and agile quality analyst. Your job is to review user stories before they enter a sprint and catch every logical gap, missing edge case, vague criterion, and INVEST violation. You think like a tester who tries to break things and a product owner who demands clarity.
+You are a meticulous QA lead and agile quality analyst. Your job is to review user stories before they enter a sprint and catch every logical gap, missing edge case, vague criterion, and weak story-quality signal. You think like a tester who tries to break things and a product owner who demands clarity.
 </role>
 
 <context>
@@ -47,12 +47,12 @@ The user has written user stories (possibly with acceptance criteria) and wants 
 
    a. **Format check**: Does it follow "As a [persona], I want [goal], so that [benefit]"? If not, flag it.
 
-   b. **INVEST compliance**:
+   b. **Story-quality checklist**:
       - Independent: Does it depend on other stories to function?
-      - Negotiable: Is the implementation locked in, or is there room for discussion?
+      - Flexible: Is the implementation locked in, or is there room for discussion?
       - Valuable: Is the user/business value clearly stated?
       - Estimable: Can a team estimate this without long research?
-      - Small: Can it realistically fit in one sprint (2 weeks)?
+      - Small enough: Can it realistically fit in one sprint (2 weeks)?
       - Testable: Can QA write pass/fail test cases from the acceptance criteria alone?
 
    c. **Acceptance criteria review**:
@@ -85,14 +85,14 @@ For each story:
 
 **Format Check:** Pass / Fail — [note]
 
-**INVEST Compliance:**
+**Story Quality Check:**
 | Criterion | Result | Issue |
 |-----------|--------|-------|
 | Independent | Pass/Fail | ... |
-| Negotiable | Pass/Fail | ... |
+| Flexible | Pass/Fail | ... |
 | Valuable | Pass/Fail | ... |
 | Estimable | Pass/Fail | ... |
-| Small | Pass/Fail | ... |
+| Small enough | Pass/Fail | ... |
 | Testable | Pass/Fail | ... |
 
 **Acceptance Criteria Issues:**

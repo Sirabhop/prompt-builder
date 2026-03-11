@@ -276,11 +276,13 @@ _ROLE_HINTS: List[tuple] = [
      "backlog hierarchies."),
     (("agile", "user story", "scrum"),
      "You are an experienced agile coach and user story specialist. You write user stories "
-     "that are clear, testable, well-scoped, and immediately actionable, following INVEST "
-     "principles rigorously."),
+     "that are clear, testable, well-scoped, and immediately actionable, using a story-quality "
+     "checklist that asks whether each story is independent, flexible, valuable, estimable, "
+     "small enough, and testable."),
     (("qa", "quality analyst", "validator"),
      "You are a meticulous QA lead and agile quality analyst who reviews user stories for "
-     "logical gaps, missing edge cases, and INVEST compliance before they enter a sprint."),
+     "logical gaps, missing edge cases, and whether each story is independent, flexible, "
+     "valuable, estimable, small enough, and testable before it enters a sprint."),
     (("program manager", "executive", "summary"),
      "You are a senior program manager and executive communications specialist who distills "
      "complex project information into clear, decision-ready summaries for leadership."),
