@@ -1,3 +1,4 @@
+import html
 import textwrap
 from pathlib import Path
 from typing import Dict, List
@@ -44,6 +45,107 @@ GENERAL_TEMPLATES: Dict[str, Dict[str, str]] = {
         "tasks": "Understand the goal and context.\nGenerate diverse ideas.\nGroup ideas and suggest the best options to start with.",
         "inputs": "Share your topic, constraints, and desired outcome.",
         "expected_output": "A list of practical ideas grouped by theme, including top recommendations.",
+    },
+}
+
+FORM_STATE_KEYS = (
+    "role",
+    "objective",
+    "tasks",
+    "inputs",
+    "expected_output",
+    "audience",
+    "tone",
+    "constraints",
+    "example_output",
+    "extra_notes",
+)
+
+DEMO_EXAMPLE: Dict[str, str] = {
+    "role": "friendly health appointment helper",
+    "objective": (
+        "Help me prepare for a doctor visit about ongoing knee pain so I can ask clear "
+        "questions and understand my treatment choices."
+    ),
+    "tasks": (
+        "List the most useful questions to ask the doctor.\n"
+        "Explain what each question helps me learn.\n"
+        "Suggest a short checklist of details to bring to the appointment."
+    ),
+    "inputs": (
+        "I am 72 years old. My knee hurts most when I walk up stairs. Physical therapy helped "
+        "a little, but the pain keeps returning. I want plain language, not medical jargon."
+    ),
+    "expected_output": (
+        "A short question list in plain language, plus a simple appointment checklist."
+    ),
+    "audience": "",
+    "tone": "",
+    "constraints": "",
+    "example_output": "",
+    "extra_notes": "",
+}
+
+STARTER_LIBRARY: Dict[str, Dict[str, str]] = {
+    "business_helper": {
+        "label": "Business helper",
+        "description": "Broad business-analysis support for general project work.",
+        "source": "template",
+        "filename": "general_worker",
+    },
+    "backlog_structurer": {
+        "label": "Backlog structurer",
+        "description": "Turn an idea into epics, features, and user stories.",
+        "source": "template",
+        "filename": "backlog_structurer",
+    },
+    "user_story_generator": {
+        "label": "User story generator",
+        "description": "Create clear user stories from a feature idea.",
+        "source": "template",
+        "filename": "user_story_generator",
+    },
+    "story_validator": {
+        "label": "Story validator",
+        "description": "Review stories for gaps, clarity, and readiness.",
+        "source": "template",
+        "filename": "user_story_validator",
+    },
+    "executive_summary": {
+        "label": "Executive summary",
+        "description": "Summarize work for leaders in a clean, decision-ready format.",
+        "source": "template",
+        "filename": "executive_summary",
+    },
+    "legal_simplifier": {
+        "label": "Legal simplifier",
+        "description": "Rewrite complex legal or policy text into plain language.",
+        "source": "template",
+        "filename": "legal_simplifier",
+    },
+    "summarize": {
+        "label": "Summarize",
+        "description": "Condense notes, articles, or transcripts into key takeaways.",
+        "source": "general",
+        "general_label": "Summarize",
+    },
+    "analyze": {
+        "label": "Analyze",
+        "description": "Review information and explain patterns, risks, and options.",
+        "source": "general",
+        "general_label": "Analyze",
+    },
+    "rewrite": {
+        "label": "Re-write",
+        "description": "Improve the clarity and tone of existing writing.",
+        "source": "general",
+        "general_label": "Re-write",
+    },
+    "brainstorm": {
+        "label": "Brainstorm",
+        "description": "Generate practical ideas and group the best ones.",
+        "source": "general",
+        "general_label": "Brainstorm",
     },
 }
 
@@ -444,10 +546,62 @@ def apply_accessible_styling():
         """
         <style>
         body { font-size: 18px; }
-        .stMarkdown, .stTextInput label, .stTextArea label { font-size: 18px !important; }
-        .stTextInput input, .stTextArea textarea { font-size: 18px !important; padding: 0.75rem; }
-        .stButton button { font-size: 18px !important; padding: 0.75rem 1.5rem !important; }
-        .small-helper { font-size: 15px; color: #444; }
+        .stApp { background: #f7f4ee; }
+        .main .block-container {
+            max-width: 880px;
+            padding-top: 2rem;
+            padding-bottom: 3rem;
+        }
+        .stMarkdown, .stTextInput label, .stTextArea label, .stSelectbox label {
+            font-size: 18px !important;
+        }
+        .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] > div {
+            font-size: 18px !important;
+            padding-top: 0.7rem;
+            padding-bottom: 0.7rem;
+        }
+        .stTextArea textarea { line-height: 1.5; }
+        .stButton button {
+            font-size: 18px !important;
+            padding: 0.8rem 1.4rem !important;
+            min-height: 3.2rem;
+            border-radius: 0.8rem;
+        }
+        .small-helper {
+            font-size: 15px;
+            color: #444;
+            margin-top: -0.35rem;
+            margin-bottom: 0.75rem;
+        }
+        .step-strip {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin: 1rem 0 1.5rem 0;
+        }
+        .step-card {
+            flex: 1 1 220px;
+            background: white;
+            border: 2px solid #d9e2ec;
+            border-radius: 0.9rem;
+            padding: 0.95rem 1rem;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+        }
+        .step-card strong {
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+        .step-card span {
+            color: #4b5563;
+            font-size: 0.95rem;
+        }
+        .section-intro {
+            background: white;
+            border-radius: 1rem;
+            padding: 1rem 1.1rem;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 1rem;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -458,110 +612,253 @@ def _helper(text: str):
     st.markdown(f'<div class="small-helper">{text}</div>', unsafe_allow_html=True)
 
 
-def render_basic_fields() -> Dict:
-    _helper("Who should the AI pretend to be while helping you?")
-    role = st.text_input(
-        "Role", key="role",
-        placeholder="Example: product manager, agile coach, legal simplifier",
-    )
-    
-    _helper("Describe the main goal in your own words.")
-    objective = st.text_area(
-        "Objective", key="objective",
-        placeholder="What do you want the AI to help you do?",
-        height=90,
-    )
-    
-    _helper("You can list one or several steps. One per line is easiest.")
-    tasks = st.text_area(
-        "Tasks", key="tasks",
-        placeholder="List the things you want the AI to do.\nOne per line is easiest.",
-        height=120,
-    )
-    
-    _helper("Share any details that will help the AI give a better answer.")
-    inputs = st.text_area(
-        "Inputs", key="inputs",
-        placeholder="Add any information the AI should use.\nExamples: project details, text to analyze, business rules.",
-        height=120,
-    )
-    
-    _helper("Explain what kind of answer you would like to see.")
-    expected_output = st.text_area(
-        "Expected output", key="expected_output",
-        placeholder="Describe what a good answer should look like.\nExample: structured backlog, validation report, executive summary.",
-        height=120,
-    )
-    
-
-    return {
-        "role": role,
-        "objective": objective,
-        "tasks": tasks,
-        "inputs": inputs,
-        "expected_output": expected_output,
-    }
+def initialize_session_state():
+    if "generated_prompt" not in st.session_state:
+        st.session_state.generated_prompt = ""
+    if "simple_explanation" not in st.session_state:
+        st.session_state.simple_explanation = ""
+    for key in FORM_STATE_KEYS:
+        if key not in st.session_state:
+            st.session_state[key] = ""
 
 
-def render_advanced_fields() -> Dict:
-    st.markdown("### Advanced options (all optional)")
+def reset_form():
+    for key in FORM_STATE_KEYS:
+        st.session_state[key] = ""
+    st.session_state.generated_prompt = ""
+    st.session_state.simple_explanation = ""
 
-    audience = st.text_input(
-        "Audience", key="audience",
-        placeholder="Who is this answer for? (Example: leadership team, dev team, stakeholders.)",
-    )
-    _helper("This helps the AI adjust language and style.")
 
-    tone = st.text_input(
-        "Tone", key="tone",
-        placeholder="Example: professional and concise, friendly, formal.",
-    )
-    _helper("How should the answer feel when someone reads it?")
+def populate_form(fields: Dict[str, str]):
+    for key in FORM_STATE_KEYS:
+        st.session_state[key] = fields.get(key, "")
+    st.session_state.generated_prompt = ""
+    st.session_state.simple_explanation = ""
 
-    constraints = st.text_area(
-        "Constraints or limits", key="constraints",
-        placeholder="Any rules? (Example: keep it under 1 page, use agile terminology, avoid acronyms.)",
-        height=90,
-    )
-    _helper("Add any limits, rules, or preferences.")
 
-    example_output = st.text_area(
-        "Example output (optional)", key="example_output",
-        placeholder="If you already have a rough example of the answer you want, paste it here.",
-        height=120,
-    )
-    _helper("The AI can use this as a model for the final answer.")
+def has_saved_answers() -> bool:
+    return any(clean_field(st.session_state.get(key, "")) for key in FORM_STATE_KEYS)
 
-    extra_notes = st.text_area(
-        "Extra notes (optional)", key="extra_notes",
-        placeholder="Anything else you want the AI to keep in mind.",
-        height=90,
+
+def has_advanced_answers() -> bool:
+    return any(
+        clean_field(st.session_state.get(key, ""))
+        for key in ("audience", "tone", "constraints", "example_output", "extra_notes")
     )
 
-    return {
-        "audience": audience,
-        "tone": tone,
-        "constraints": constraints,
-        "example_output": example_output,
-        "extra_notes": extra_notes,
-    }
+
+def collect_form_data() -> Dict[str, str]:
+    return {key: clean_field(st.session_state.get(key, "")) for key in FORM_STATE_KEYS}
 
 
-def apply_template(template_label: str):
-    """Load a template from markdown and fill session_state fields."""
-    filename = TEMPLATE_REGISTRY.get(template_label)
-    if not filename:
+def render_step_overview():
+    st.markdown(
+        """
+        <div class="step-strip">
+            <div class="step-card">
+                <strong>Step 1</strong>
+                <span>Choose a blank form, a simple example, or a starter.</span>
+            </div>
+            <div class="step-card">
+                <strong>Step 2</strong>
+                <span>Answer a few plain-language questions about what you need.</span>
+            </div>
+            <div class="step-card">
+                <strong>Step 3</strong>
+                <span>Create the prompt, then copy it into ChatGPT, Claude, or another AI tool.</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_question(
+    title: str,
+    helper_text: str,
+    *,
+    key: str,
+    placeholder: str,
+    height: int | None = None,
+):
+    st.markdown(f"**{title}**")
+    _helper(helper_text)
+    if height is None:
+        st.text_input(
+            title,
+            key=key,
+            placeholder=placeholder,
+            label_visibility="collapsed",
+        )
         return
-    fields = load_template(filename)
-    for key in ("role", "objective", "tasks", "inputs", "expected_output"):
-        st.session_state[key] = fields.get(key, "")
+
+    st.text_area(
+        title,
+        key=key,
+        placeholder=placeholder,
+        height=height,
+        label_visibility="collapsed",
+    )
 
 
-def apply_general_template(template_label: str):
-    """Load one of the built-in general-purpose templates."""
-    fields = GENERAL_TEMPLATES.get(template_label, {})
-    for key in ("role", "objective", "tasks", "inputs", "expected_output"):
-        st.session_state[key] = fields.get(key, "")
+def render_basic_fields():
+    render_question(
+        "What do you want help with?",
+        "Describe your goal in your own words. This is the most important box.",
+        key="objective",
+        placeholder="Example: Help me prepare questions for my next doctor visit.",
+        height=140,
+    )
+    render_question(
+        "What kind of helper should the AI be? (optional)",
+        "If you are not sure, leave this blank and the app will choose a friendly helper voice.",
+        key="role",
+        placeholder="Example: travel planner, writing coach, legal simplifier",
+    )
+    render_question(
+        "What should the AI do? (optional)",
+        "List one step per line if you want the AI to follow a sequence.",
+        key="tasks",
+        placeholder="Example:\nExplain my options.\nGive me a checklist.\nSuggest questions to ask.",
+        height=130,
+    )
+    render_question(
+        "What details should the AI use? (optional)",
+        "Add facts, notes, or pasted text that will help the answer fit your situation.",
+        key="inputs",
+        placeholder="Example: Age, important dates, notes, rules, or text to summarize.",
+        height=140,
+    )
+    render_question(
+        "What should the answer look like? (optional)",
+        "Describe the kind of result you want, such as a checklist, summary, or plan.",
+        key="expected_output",
+        placeholder="Example: A short checklist in plain language with clear next steps.",
+        height=130,
+    )
+
+
+def render_advanced_fields():
+    st.markdown("### More options")
+    render_question(
+        "Who is the answer for? (optional)",
+        "This helps the AI choose the right reading level and style.",
+        key="audience",
+        placeholder="Example: me, my family, my manager, or a leadership team",
+    )
+    render_question(
+        "How should the answer sound? (optional)",
+        "Use this if you want the answer to feel more formal, warm, or concise.",
+        key="tone",
+        placeholder="Example: calm and supportive, professional, friendly",
+    )
+    render_question(
+        "Any rules or limits? (optional)",
+        "Use this for word limits, banned jargon, formatting rules, or special requests.",
+        key="constraints",
+        placeholder="Example: Keep it under 1 page. Avoid acronyms. Use bullet points.",
+        height=110,
+    )
+    render_question(
+        "Do you have an example answer? (optional)",
+        "Paste a rough example if you want the AI to mirror its style or structure.",
+        key="example_output",
+        placeholder="Paste a rough example here if you already have one.",
+        height=130,
+    )
+    render_question(
+        "Anything else the AI should remember? (optional)",
+        "Add final reminders or context that does not fit anywhere else.",
+        key="extra_notes",
+        placeholder="Example: Keep the tone encouraging and explain unfamiliar terms.",
+        height=110,
+    )
+
+
+def load_starter(choice_key: str):
+    starter = STARTER_LIBRARY.get(choice_key)
+    if not starter:
+        return
+    if starter["source"] == "template":
+        populate_form(load_template(starter["filename"]))
+        return
+    populate_form(GENERAL_TEMPLATES.get(starter["general_label"], {}))
+
+
+def build_feedback_messages(data: Dict[str, str]) -> List[str]:
+    messages: List[str] = []
+    if is_vague(data.get("objective", "")):
+        messages.append("Add 1 or 2 more sentences to 'What do you want help with?' for a stronger result.")
+    if data.get("tasks") and is_vague(data.get("tasks", "")):
+        messages.append("Make the 'What should the AI do?' box more specific by listing clear actions.")
+    if not data.get("inputs"):
+        messages.append("If the answer needs context, add a few useful details in 'What details should the AI use?'.")
+    return messages
+
+
+def render_copy_button(prompt_text: str):
+    safe_prompt = html.escape(prompt_text)
+    components.html(
+        f"""
+        <div style="margin: 0.4rem 0 0.8rem 0;">
+            <button
+                id="copy-button"
+                onclick='
+                    const button = document.getElementById("copy-button");
+                    const status = document.getElementById("copy-status");
+                    const text = document.getElementById("built-prompt").textContent;
+                    let copied = false;
+
+                    const tempArea = document.createElement("textarea");
+                    tempArea.value = text;
+                    tempArea.setAttribute("readonly", "");
+                    tempArea.style.position = "absolute";
+                    tempArea.style.left = "-9999px";
+                    document.body.appendChild(tempArea);
+                    tempArea.select();
+                    tempArea.setSelectionRange(0, tempArea.value.length);
+
+                    try {{
+                        copied = document.execCommand("copy");
+                    }} catch (error) {{
+                        copied = false;
+                    }}
+                    document.body.removeChild(tempArea);
+
+                    if (!copied && navigator.clipboard && window.isSecureContext) {{
+                        navigator.clipboard.writeText(text).then(function() {{
+                            button.textContent = "Copied!";
+                            button.style.background = "#15803d";
+                            status.textContent = "Copied. You can now paste it into your AI tool.";
+                        }}).catch(function() {{
+                            button.textContent = "Copy manually below";
+                            button.style.background = "#b45309";
+                            status.textContent = "Copy did not work here. Please use the text box below.";
+                        }});
+                        return;
+                    }}
+
+                    if (copied) {{
+                        button.textContent = "Copied!";
+                        button.style.background = "#15803d";
+                        status.textContent = "Copied. You can now paste it into your AI tool.";
+                    }} else {{
+                        button.textContent = "Copy manually below";
+                        button.style.background = "#b45309";
+                        status.textContent = "Copy did not work here. Please use the text box below.";
+                    }}
+                '
+                style="font-size:18px;padding:0.8rem 1.4rem;border:none;border-radius:0.8rem;background:#1d4ed8;color:white;cursor:pointer;">
+                Copy prompt
+            </button>
+            <div id="copy-status" style="margin-top:0.7rem;font-size:15px;color:#374151;">
+                Tip: If the button does not work, you can still copy the text box below.
+            </div>
+            <pre id="built-prompt" style="display:none;white-space:pre-wrap;">{safe_prompt}</pre>
+        </div>
+        """,
+        height=105,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -574,102 +871,120 @@ def main():
         layout="centered",
     )
     apply_accessible_styling()
+    initialize_session_state()
 
-    if "generated_prompt" not in st.session_state:
-        st.session_state.generated_prompt = ""
-    if "simple_explanation" not in st.session_state:
-        st.session_state.simple_explanation = ""
-
-    # --- Header ---
     st.title("Prompt Builder for Seniors")
     st.write(
-        "This tool helps you turn a simple request into a clear, strong AI prompt. "
-        "You do not need any technical knowledge \u2014 just describe what you need in your own words."
+        "Answer a few simple questions and this tool turns your words into a ready-to-use AI prompt. "
+        "No technical knowledge is needed."
+    )
+    render_step_overview()
+    st.markdown(
+        """
+        <div class="section-intro">
+            <strong>How it works:</strong> choose a starting point, fill in the questions, then copy the finished prompt into ChatGPT, Claude, or another AI tool.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-    # --- Preset templates loaded from prompt-template/ ---
-    st.markdown("### Optional: Start from a ready-made template")
-    st.markdown("#### Business Analyst")
-    ba_labels = list(TEMPLATE_REGISTRY.keys())
-    ba_cols = st.columns(3)
-    for idx, label in enumerate(ba_labels):
-        with ba_cols[idx % 3]:
-            if st.button(label, use_container_width=True):
-                apply_template(label)
-
-    st.markdown("#### General")
-    general_labels = list(GENERAL_TEMPLATES.keys())
-    general_cols = st.columns(4)
-    for col, label in zip(general_cols, general_labels):
-        with col:
-            if st.button(label, use_container_width=True):
-                apply_general_template(label)
-
-    st.markdown("---")
-    st.markdown("### 1. Describe your request")
-
-    basic_values = render_basic_fields()
-    st.markdown("---")
-    with st.expander("Optional: fine-tune the answer (advanced)", expanded=False):
-        advanced_values: Dict = render_advanced_fields()
-
-    # --- Prompt quality guidance ---
-    st.markdown("---")
-    st.markdown("### 2. What makes a good prompt?")
-    st.info(
-        "Good prompts are clear about **who** the AI should be, **what** it should do, "
-        "**what information** it should use, and **what kind of answer** you want. "
-        "You fill in the boxes above, and this app turns your words into a strong prompt for you."
+    st.markdown("### Step 1 of 3: Choose how you want to start")
+    start_choice = st.radio(
+        "Starting point",
+        (
+            "Start with a blank form",
+            "Use a filled example",
+            "Use a ready-made starter",
+        ),
+        label_visibility="collapsed",
     )
-
-    # --- Action buttons ---
-    st.markdown("---")
-    st.markdown("### 3. Build your final prompt")
-    c1, c2 = st.columns([3, 1])
-    with c1:
-        generate_clicked = st.button(
-            "Generate Prompt", type="primary", use_container_width=True,
+    if start_choice == "Use a filled example":
+        st.info("The example fills the form with a simple doctor-visit planning request so you can see what good answers look like.")
+    elif start_choice == "Use a ready-made starter":
+        starter_choice = st.selectbox(
+            "Pick a starter",
+            options=list(STARTER_LIBRARY.keys()),
+            format_func=lambda key: STARTER_LIBRARY[key]["label"],
         )
-    with c2:
-        clear_clicked = st.button("Clear all fields", use_container_width=True)
+        st.caption(STARTER_LIBRARY[starter_choice]["description"])
+    else:
+        st.info("You can skip starters and type your own request below.")
 
-    if clear_clicked:
-        for key in (
-            "role", "objective", "tasks", "inputs", "expected_output",
-            "audience", "tone", "constraints", "example_output", "extra_notes",
-        ):
-            if key in st.session_state:
-                st.session_state[key] = ""
-        st.session_state.generated_prompt = ""
-        st.session_state.simple_explanation = ""
+    if start_choice == "Start with a blank form":
+        start_button_label = "Clear the form and start fresh"
+    elif start_choice == "Use a filled example":
+        start_button_label = "Load the example into the form"
+    else:
+        start_button_label = "Load this starter into the form"
+
+    if has_saved_answers():
+        st.caption("Loading a new starting point will replace your current answers.")
+
+    if st.button(start_button_label, use_container_width=True):
+        if start_choice == "Start with a blank form":
+            reset_form()
+        elif start_choice == "Use a filled example":
+            populate_form(DEMO_EXAMPLE)
+        else:
+            load_starter(starter_choice)
         st.rerun()
 
-    if generate_clicked:
-        data = {**basic_values, **advanced_values}
-        for k in list(data.keys()):
-            data[k] = clean_field(data[k])
+    st.markdown("---")
+    st.markdown("### Step 2 of 3: Tell us what you need")
+    with st.expander("Why these questions help", expanded=False):
+        st.write(
+            "The app builds a stronger prompt when it knows your goal, the details that matter, "
+            "and what kind of answer would be most useful."
+        )
+        st.write(
+            "You do not need to fill every box. Start with your goal, then add more detail only if it helps."
+        )
 
+    render_basic_fields()
+
+    show_advanced = st.checkbox(
+        "I want to add audience, tone, or other extra instructions",
+        value=has_advanced_answers(),
+    )
+    if show_advanced:
+        render_advanced_fields()
+
+    st.markdown("---")
+    st.markdown("### Step 3 of 3: Create your prompt")
+    st.write("Press the button when you are ready. You can update your answers and create the prompt again at any time.")
+    generate_clicked = st.button(
+        "Create my prompt",
+        type="primary",
+        use_container_width=True,
+    )
+
+    with st.expander("Need to start over?", expanded=False):
+        st.write("This clears every answer and removes the generated prompt.")
+        if st.button("Clear all answers", use_container_width=True):
+            reset_form()
+            st.rerun()
+
+    if generate_clicked:
+        data = collect_form_data()
         prompt = build_prompt(data)
         st.session_state.generated_prompt = prompt
         st.session_state.simple_explanation = build_simple_explanation(data)
 
-        if is_vague(data.get("objective", "")) or is_vague(data.get("tasks", "")):
-            st.warning(
-                "Some parts of your request look a bit short or vague. "
-                "Try adding a few more details about your goal or steps for a stronger prompt."
-            )
+        feedback_messages = build_feedback_messages(data)
+        if feedback_messages:
+            st.warning("\n".join(f"- {message}" for message in feedback_messages))
 
-    # --- Generated prompt ---
     st.markdown("---")
-    st.markdown("### 4. Your ready-to-use AI prompt")
+    st.markdown("### Your ready-to-use AI prompt")
 
     if st.session_state.generated_prompt:
         prompt_text = st.session_state.generated_prompt
         num_chars = len(prompt_text)
         approx_tokens = max(1, num_chars // 4)
 
+        st.success("Your prompt is ready. Copy it, then paste it into your AI tool.")
         st.caption(f"Prompt length: about {num_chars} characters (~{approx_tokens} tokens).")
-        st.code(prompt_text, language="text")
+        render_copy_button(prompt_text)
 
         st.download_button(
             label="Download prompt as .txt",
@@ -677,36 +992,20 @@ def main():
             file_name="prompt_builder_for_seniors_prompt.txt",
             mime="text/plain",
         )
-        copy_html = f"""
-        <button onclick='navigator.clipboard.writeText(document.getElementById("built-prompt").textContent)'>Copy prompt</button>
-        <pre id="built-prompt" style="display:none;">{prompt_text}</pre>
-        """
-        components.html(copy_html, height=40)
+        st.text_area(
+            "Review or copy the prompt below",
+            value=prompt_text,
+            height=320,
+        )
+        st.info(
+            "Next step: open ChatGPT, Claude, or another AI tool, paste this prompt, and add any extra details you want the AI to consider."
+        )
     else:
-        st.write("Your final prompt will appear here after you press **Generate Prompt**.")
+        st.write("Your finished prompt will appear here after you press **Create my prompt**.")
 
-    # --- Simple explanation ---
     if st.session_state.simple_explanation:
-        st.markdown("---")
-        st.markdown("### 5. Simple explanation of this prompt")
-        st.write("Here is an easy-to-read description of what your prompt is asking the AI to do:")
+        st.markdown("### What this prompt asks the AI to do")
         st.markdown(st.session_state.simple_explanation)
-
-    # --- Educational section ---
-    st.markdown("---")
-    st.markdown("### Why this works")
-    st.write(
-        "This app follows proven prompt-building ideas:\n"
-        "- **Role** gives the AI a clear identity so it behaves in a useful way.\n"
-        "- **Objective** sets the main goal, so the AI knows what success looks like.\n"
-        "- **Tasks** break the work into clear steps the AI can follow.\n"
-        "- **Inputs** give context and details, so the answer fits your situation.\n"
-        "- **Expected output** reduces confusion by telling the AI what kind of answer you want."
-    )
-    st.write(
-        "The final prompt is organized in simple XML-style sections "
-        "(`<role>`, `<context>`, etc.), which many AI systems (including Claude) handle very well."
-    )
 
 
 if __name__ == "__main__":
