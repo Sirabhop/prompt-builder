@@ -1,10 +1,8 @@
-import html
 import textwrap
 from pathlib import Path
 from typing import Dict, List
 
 import streamlit as st
-import streamlit.components.v1 as components
 
 TEMPLATE_DIR = Path(__file__).parent / "prompt-template"
 
@@ -544,74 +542,14 @@ def build_simple_explanation(data: Dict) -> str:
 # UI helpers
 # ---------------------------------------------------------------------------
 def apply_accessible_styling():
-    st.markdown(
-        """
-        <style>
-        body { font-size: 18px; }
-        .stApp { background: #f7f4ee; }
-        .main .block-container {
-            max-width: 880px;
-            padding-top: 2rem;
-            padding-bottom: 3rem;
-        }
-        .stMarkdown, .stTextInput label, .stTextArea label, .stSelectbox label {
-            font-size: 18px !important;
-        }
-        .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] > div {
-            font-size: 18px !important;
-            padding-top: 0.7rem;
-            padding-bottom: 0.7rem;
-        }
-        .stTextArea textarea { line-height: 1.5; }
-        .stButton button {
-            font-size: 18px !important;
-            padding: 0.8rem 1.4rem !important;
-            min-height: 3.2rem;
-            border-radius: 0.8rem;
-        }
-        .small-helper {
-            font-size: 15px;
-            color: #444;
-            margin-top: -0.35rem;
-            margin-bottom: 0.75rem;
-        }
-        .step-strip {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-            margin: 1rem 0 1.5rem 0;
-        }
-        .step-card {
-            flex: 1 1 220px;
-            background: white;
-            border: 2px solid #d9e2ec;
-            border-radius: 0.9rem;
-            padding: 0.95rem 1rem;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-        }
-        .step-card strong {
-            display: block;
-            margin-bottom: 0.2rem;
-        }
-        .step-card span {
-            color: #4b5563;
-            font-size: 0.95rem;
-        }
-        .section-intro {
-            background: white;
-            border-radius: 1rem;
-            padding: 1rem 1.1rem;
-            border: 1px solid #e5e7eb;
-            margin-bottom: 1rem;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    # Use Streamlit's native theming; keep this as a placeholder
+    # in case we want to add non-CSS accessibility tweaks later.
+    return
 
 
 def _helper(text: str):
-    st.markdown(f'<div class="small-helper">{text}</div>', unsafe_allow_html=True)
+    # Use native helper text styling
+    st.caption(text)
 
 
 def initialize_session_state():
@@ -638,6 +576,14 @@ def populate_form(fields: Dict[str, str]):
     st.session_state.simple_explanation = ""
 
 
+def apply_start_action(action: str, starter_key: str | None = None):
+    if action == "blank":
+        reset_form()
+        return
+    if action == "starter" and starter_key:
+        load_starter(starter_key)
+
+
 def has_saved_answers() -> bool:
     return any(clean_field(st.session_state.get(key, "")) for key in FORM_STATE_KEYS)
 
@@ -654,24 +600,11 @@ def collect_form_data() -> Dict[str, str]:
 
 
 def render_step_overview():
+    st.subheader("Three simple steps")
     st.markdown(
-        """
-        <div class="step-strip">
-            <div class="step-card">
-                <strong>Step 1</strong>
-                <span>Choose a blank form, a simple example, or a starter.</span>
-            </div>
-            <div class="step-card">
-                <strong>Step 2</strong>
-                <span>Answer a few plain-language questions about what you need.</span>
-            </div>
-            <div class="step-card">
-                <strong>Step 3</strong>
-                <span>Create the prompt, then copy it into ChatGPT, Claude, or another AI tool.</span>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+        "1. Choose a blank form or load a template.\n"
+        "2. Answer a few plain-language questions about what you need.\n"
+        "3. Create the prompt, then copy it into ChatGPT, Claude, or another AI tool."
     )
 
 
@@ -798,138 +731,74 @@ def build_feedback_messages(data: Dict[str, str]) -> List[str]:
     return messages
 
 
-def render_copy_button(prompt_text: str):
-    safe_prompt = html.escape(prompt_text)
-    components.html(
-        f"""
-        <div style="margin: 0.4rem 0 0.8rem 0;">
-            <button
-                id="copy-button"
-                onclick='
-                    const button = document.getElementById("copy-button");
-                    const status = document.getElementById("copy-status");
-                    const text = document.getElementById("built-prompt").textContent;
-                    let copied = false;
-
-                    const tempArea = document.createElement("textarea");
-                    tempArea.value = text;
-                    tempArea.setAttribute("readonly", "");
-                    tempArea.style.position = "absolute";
-                    tempArea.style.left = "-9999px";
-                    document.body.appendChild(tempArea);
-                    tempArea.select();
-                    tempArea.setSelectionRange(0, tempArea.value.length);
-
-                    try {{
-                        copied = document.execCommand("copy");
-                    }} catch (error) {{
-                        copied = false;
-                    }}
-                    document.body.removeChild(tempArea);
-
-                    if (!copied && navigator.clipboard && window.isSecureContext) {{
-                        navigator.clipboard.writeText(text).then(function() {{
-                            button.textContent = "Copied!";
-                            button.style.background = "#15803d";
-                            status.textContent = "Copied. You can now paste it into your AI tool.";
-                        }}).catch(function() {{
-                            button.textContent = "Copy manually below";
-                            button.style.background = "#b45309";
-                            status.textContent = "Copy did not work here. Please use the text box below.";
-                        }});
-                        return;
-                    }}
-
-                    if (copied) {{
-                        button.textContent = "Copied!";
-                        button.style.background = "#15803d";
-                        status.textContent = "Copied. You can now paste it into your AI tool.";
-                    }} else {{
-                        button.textContent = "Copy manually below";
-                        button.style.background = "#b45309";
-                        status.textContent = "Copy did not work here. Please use the text box below.";
-                    }}
-                '
-                style="font-size:18px;padding:0.8rem 1.4rem;border:none;border-radius:0.8rem;background:#1d4ed8;color:white;cursor:pointer;">
-                Copy prompt
-            </button>
-            <div id="copy-status" style="margin-top:0.7rem;font-size:15px;color:#374151;">
-                Tip: If the button does not work, you can still copy the text box below.
-            </div>
-            <pre id="built-prompt" style="display:none;white-space:pre-wrap;">{safe_prompt}</pre>
-        </div>
-        """,
-        height=105,
-    )
-
-
 # ---------------------------------------------------------------------------
 # Main app
 # ---------------------------------------------------------------------------
 def main():
     st.set_page_config(
-        page_title="Prompt Builder for Seniors",
+        page_title="Prompt Builder for IBMDT",
         page_icon="✨",
         layout="centered",
     )
     apply_accessible_styling()
     initialize_session_state()
 
-    st.title("Prompt Builder for Seniors")
+    st.title("Prompt Builder for IBMDT")
+    st.caption("Powered by Data & AI team")
     st.write(
         "Answer a few simple questions and this tool turns your words into a ready-to-use AI prompt. "
         "No technical knowledge is needed."
     )
     render_step_overview()
-    st.markdown(
-        """
-        <div class="section-intro">
-            <strong>How it works:</strong> choose a starting point, fill in the questions, then copy the finished prompt into ChatGPT, Claude, or another AI tool.
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.info(
+        "How it works: choose a blank form or a template, fill in the questions, "
+        "then copy the finished prompt into ChatGPT, Claude, or another AI tool."
     )
 
     st.markdown("### Step 1 of 3: Choose how you want to start")
     start_choice = st.radio(
         "Starting point",
         (
-            "Start with a blank form",
-            "Use a filled example",
-            "Use a ready-made starter",
+            "Use blank form",
+            "Select from template",
         ),
         label_visibility="collapsed",
     )
-    if start_choice == "Use a filled example":
-        st.info("The example fills the form with a simple doctor-visit planning request so you can see what good answers look like.")
-    elif start_choice == "Use a ready-made starter":
+    if start_choice == "Select from template":
+        # Use custom label rendering for selectbox options (text only)
+        def selectbox_label(key):
+            return STARTER_LIBRARY[key]["label"]
+
         starter_choice = st.selectbox(
-            "Pick a starter",
-            options=list(STARTER_LIBRARY.keys()),
-            format_func=lambda key: STARTER_LIBRARY[key]["label"],
+            "Select a template",
+            options=list[str](STARTER_LIBRARY.keys()),
+            format_func=selectbox_label,
+            key="starter_selectbox_black",
+            label_visibility="visible",
         )
         st.caption(STARTER_LIBRARY[starter_choice]["description"])
     else:
-        st.info("You can skip starters and type your own request below.")
+        st.info("Start with empty fields and type your own request.")
 
-    if start_choice == "Start with a blank form":
-        start_button_label = "Clear the form and start fresh"
-    elif start_choice == "Use a filled example":
-        start_button_label = "Load the example into the form"
-    else:
-        start_button_label = "Load this starter into the form"
+    start_button_label = "Use blank form" if start_choice == "Use blank form" else "Use template"
 
     if has_saved_answers():
-        st.caption("Loading a new starting point will replace your current answers.")
+        st.caption("Changing this will replace your current answers.")
 
-    if st.button(start_button_label, use_container_width=True):
-        if start_choice == "Start with a blank form":
-            reset_form()
-        elif start_choice == "Use a filled example":
-            populate_form(DEMO_EXAMPLE)
-        else:
-            load_starter(starter_choice)
-        st.rerun()
+    if start_choice == "Use blank form":
+        st.button(
+            start_button_label,
+            use_container_width=True,
+            on_click=apply_start_action,
+            args=("blank",),
+        )
+    else:
+        st.button(
+            start_button_label,
+            use_container_width=True,
+            on_click=apply_start_action,
+            args=("starter", starter_choice),
+        )
 
     st.markdown("---")
     st.markdown("### Step 2 of 3: Tell us what you need")
@@ -954,17 +823,20 @@ def main():
     st.markdown("---")
     st.markdown("### Step 3 of 3: Create your prompt")
     st.write("Press the button when you are ready. You can update your answers and create the prompt again at any time.")
-    generate_clicked = st.button(
-        "Create my prompt",
-        type="primary",
-        use_container_width=True,
-    )
-
-    with st.expander("Need to start over?", expanded=False):
-        st.write("This clears every answer and removes the generated prompt.")
-        if st.button("Clear all answers", use_container_width=True):
-            reset_form()
-            st.rerun()
+    action_col_1, action_col_2 = st.columns(2)
+    with action_col_1:
+        generate_clicked = st.button(
+            "Generate prompt",
+            icon="🤩",
+            # type="primary",
+            use_container_width=True,
+        )
+    with action_col_2:
+        st.button(
+            "Clear form",
+            use_container_width=True,
+            on_click=reset_form,
+        )
 
     if generate_clicked:
         data = collect_form_data()
@@ -986,14 +858,6 @@ def main():
 
         st.success("Your prompt is ready. Copy it, then paste it into your AI tool.")
         st.caption(f"Prompt length: about {num_chars} characters (~{approx_tokens} tokens).")
-        render_copy_button(prompt_text)
-
-        st.download_button(
-            label="Download prompt as .txt",
-            data=prompt_text.encode("utf-8"),
-            file_name="prompt_builder_for_seniors_prompt.txt",
-            mime="text/plain",
-        )
         st.text_area(
             "Review or copy the prompt below",
             value=prompt_text,
