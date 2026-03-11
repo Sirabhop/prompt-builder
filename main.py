@@ -564,10 +564,18 @@ def apply_accessible_styling():
         }
         .stTextArea textarea { line-height: 1.5; }
         .stButton button {
-            font-size: 18px !important;
-            padding: 0.8rem 1.4rem !important;
-            min-height: 3.2rem;
+            font-size: 19px !important;
+            font-weight: 600 !important;
+            padding: 0.95rem 1.4rem !important;
+            min-height: 3.5rem;
             border-radius: 0.8rem;
+        }
+        .stRadio [role="radiogroup"] label {
+            padding-top: 0.25rem;
+            padding-bottom: 0.25rem;
+        }
+        .stRadio [role="radiogroup"] p {
+            font-size: 20px !important;
         }
         .small-helper {
             font-size: 15px;
@@ -603,6 +611,16 @@ def apply_accessible_styling():
             padding: 1rem 1.1rem;
             border: 1px solid #e5e7eb;
             margin-bottom: 1rem;
+        }
+        div[data-testid="stHorizontalBlock"]:has(button[kind="primary"]) button[kind="primary"] {
+            background: #15803d !important;
+            border-color: #15803d !important;
+            color: white !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(button[kind="primary"]) button:not([kind="primary"]) {
+            background: #b91c1c !important;
+            border-color: #b91c1c !important;
+            color: white !important;
         }
         </style>
         """,
@@ -642,9 +660,6 @@ def apply_start_action(action: str, starter_key: str | None = None):
     if action == "blank":
         reset_form()
         return
-    if action == "example":
-        populate_form(DEMO_EXAMPLE)
-        return
     if action == "starter" and starter_key:
         load_starter(starter_key)
 
@@ -670,7 +685,7 @@ def render_step_overview():
         <div class="step-strip">
             <div class="step-card">
                 <strong>Step 1</strong>
-                <span>Choose a blank form, a simple example, or a starter.</span>
+                <span>Choose a blank form or load a template.</span>
             </div>
             <div class="step-card">
                 <strong>Step 2</strong>
@@ -895,7 +910,7 @@ def main():
     st.markdown(
         """
         <div class="section-intro">
-            <strong>How it works:</strong> choose a starting point, fill in the questions, then copy the finished prompt into ChatGPT, Claude, or another AI tool.
+            <strong>How it works:</strong> choose a blank form or a template, fill in the questions, then copy the finished prompt into ChatGPT, Claude, or another AI tool.
         </div>
         """,
         unsafe_allow_html=True,
@@ -905,47 +920,32 @@ def main():
     start_choice = st.radio(
         "Starting point",
         (
-            "Start with a blank form",
-            "Use a filled example",
-            "Use a ready-made starter",
+            "Use blank form",
+            "Select from template",
         ),
         label_visibility="collapsed",
     )
-    if start_choice == "Use a filled example":
-        st.info("The example fills the form with a simple doctor-visit planning request so you can see what good answers look like.")
-    elif start_choice == "Use a ready-made starter":
+    if start_choice == "Select from template":
         starter_choice = st.selectbox(
-            "Pick a starter",
+            "Select a template",
             options=list(STARTER_LIBRARY.keys()),
             format_func=lambda key: STARTER_LIBRARY[key]["label"],
         )
         st.caption(STARTER_LIBRARY[starter_choice]["description"])
     else:
-        st.info("You can skip starters and type your own request below.")
+        st.info("Start with empty fields and type your own request.")
 
-    if start_choice == "Start with a blank form":
-        start_button_label = "Clear the form and start fresh"
-    elif start_choice == "Use a filled example":
-        start_button_label = "Load the example into the form"
-    else:
-        start_button_label = "Load this starter into the form"
+    start_button_label = "Use blank form" if start_choice == "Use blank form" else "Use template"
 
     if has_saved_answers():
-        st.caption("Loading a new starting point will replace your current answers.")
+        st.caption("Changing this will replace your current answers.")
 
-    if start_choice == "Start with a blank form":
+    if start_choice == "Use blank form":
         st.button(
             start_button_label,
             use_container_width=True,
             on_click=apply_start_action,
             args=("blank",),
-        )
-    elif start_choice == "Use a filled example":
-        st.button(
-            start_button_label,
-            use_container_width=True,
-            on_click=apply_start_action,
-            args=("example",),
         )
     else:
         st.button(
@@ -978,16 +978,16 @@ def main():
     st.markdown("---")
     st.markdown("### Step 3 of 3: Create your prompt")
     st.write("Press the button when you are ready. You can update your answers and create the prompt again at any time.")
-    generate_clicked = st.button(
-        "Create my prompt",
-        type="primary",
-        use_container_width=True,
-    )
-
-    with st.expander("Need to start over?", expanded=False):
-        st.write("This clears every answer and removes the generated prompt.")
+    action_col_1, action_col_2 = st.columns(2)
+    with action_col_1:
+        generate_clicked = st.button(
+            "Generate prompt",
+            type="primary",
+            use_container_width=True,
+        )
+    with action_col_2:
         st.button(
-            "Clear all answers",
+            "Clear form",
             use_container_width=True,
             on_click=reset_form,
         )
