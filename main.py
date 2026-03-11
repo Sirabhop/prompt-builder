@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Dict, List
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 TEMPLATE_DIR = Path(__file__).parent / "prompt-template"
 
@@ -13,6 +14,37 @@ TEMPLATE_REGISTRY: Dict[str, str] = {
     "Story Validator": "user_story_validator",
     "Executive Summary": "executive_summary",
     "Legal Simplifier": "legal_simplifier",
+}
+
+GENERAL_TEMPLATES: Dict[str, Dict[str, str]] = {
+    "Summarize": {
+        "role": "clear communication assistant",
+        "objective": "Summarize the provided content clearly and accurately.",
+        "tasks": "Read the provided content carefully.\nIdentify key points and remove repetition.\nWrite a concise summary in plain language.",
+        "inputs": "Paste the text, meeting notes, article, or transcript to summarize.",
+        "expected_output": "A concise summary with the most important points and a short key-takeaways list.",
+    },
+    "Analyze": {
+        "role": "analyst",
+        "objective": "Analyze the provided content and explain findings.",
+        "tasks": "Review the content.\nIdentify patterns, risks, and opportunities.\nProvide clear insights with rationale.",
+        "inputs": "Paste the data, text, report, or scenario to analyze.",
+        "expected_output": "A structured analysis with observations, interpretation, and recommended next steps.",
+    },
+    "Re-write": {
+        "role": "writing editor",
+        "objective": "Rewrite the provided text to improve clarity, tone, and readability.",
+        "tasks": "Understand the original message.\nRewrite for clarity and flow.\nKeep the original meaning while improving wording.",
+        "inputs": "Paste the text to rewrite and mention preferred tone (optional).",
+        "expected_output": "A polished rewritten version plus a short note about major improvements made.",
+    },
+    "Brainstorm": {
+        "role": "creative idea coach",
+        "objective": "Generate useful ideas for the user's topic.",
+        "tasks": "Understand the goal and context.\nGenerate diverse ideas.\nGroup ideas and suggest the best options to start with.",
+        "inputs": "Share your topic, constraints, and desired outcome.",
+        "expected_output": "A list of practical ideas grouped by theme, including top recommendations.",
+    },
 }
 
 
@@ -525,6 +557,13 @@ def apply_template(template_label: str):
         st.session_state[key] = fields.get(key, "")
 
 
+def apply_general_template(template_label: str):
+    """Load one of the built-in general-purpose templates."""
+    fields = GENERAL_TEMPLATES.get(template_label, {})
+    for key in ("role", "objective", "tasks", "inputs", "expected_output"):
+        st.session_state[key] = fields.get(key, "")
+
+
 # ---------------------------------------------------------------------------
 # Main app
 # ---------------------------------------------------------------------------
@@ -550,12 +589,21 @@ def main():
 
     # --- Preset templates loaded from prompt-template/ ---
     st.markdown("### Optional: Start from a ready-made template")
-    template_labels = list(TEMPLATE_REGISTRY.keys())
-    cols = st.columns(len(template_labels))
-    for col, label in zip(cols, template_labels):
-        with col:
+    st.markdown("#### Business Analyst")
+    ba_labels = list(TEMPLATE_REGISTRY.keys())
+    ba_cols = st.columns(3)
+    for idx, label in enumerate(ba_labels):
+        with ba_cols[idx % 3]:
             if st.button(label, use_container_width=True):
                 apply_template(label)
+
+    st.markdown("#### General")
+    general_labels = list(GENERAL_TEMPLATES.keys())
+    general_cols = st.columns(4)
+    for col, label in zip(general_cols, general_labels):
+        with col:
+            if st.button(label, use_container_width=True):
+                apply_general_template(label)
 
     st.markdown("---")
     st.markdown("### 1. Describe your request")
@@ -629,6 +677,11 @@ def main():
             file_name="prompt_builder_for_seniors_prompt.txt",
             mime="text/plain",
         )
+        copy_html = f"""
+        <button onclick='navigator.clipboard.writeText(document.getElementById("built-prompt").textContent)'>Copy prompt</button>
+        <pre id="built-prompt" style="display:none;">{prompt_text}</pre>
+        """
+        components.html(copy_html, height=40)
     else:
         st.write("Your final prompt will appear here after you press **Generate Prompt**.")
 
